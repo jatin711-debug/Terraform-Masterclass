@@ -51,6 +51,37 @@ resource "aws_security_group" "server_security_group" {
 
 
 output "public_ip" {
-  value = aws_instance.running_server.public_ip
+  value       = aws_instance.running_server.public_ip
   description = "value of public ip of the server"
+}
+
+
+resource "aws_launch_configuration" "example" {
+  image_id        = "ami-0ea18256de20ecdfc"
+  instance_type   = "t2.micro"
+  security_groups = [aws_security_group.server_security_group.id]
+  lifecycle {
+    create_before_destroy = true
+  }
+  user_data       = <<-EOF
+              #!/bin/bash
+              sudo apt install -y apache2
+              sudo apt-get install ec2-instance-connect 
+              yum install -y httpd
+              echo "Hello, World" > index.html
+              nohup busybox httpd -f -p ${var.server_port} &
+              EOF
+}
+
+
+resource "aws_autoscaling_group" "example" {
+  launch_configuration = aws.launch_configuration.example.name
+  min_size = 2
+  max_size = 3
+
+  tag {
+    key                 = "Name"
+    value               = "terraform-asg-example"
+    propagate_at_launch = true
+  }
 }
