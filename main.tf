@@ -74,8 +74,21 @@ resource "aws_launch_configuration" "example" {
 }
 
 
+# get the details of default vpc
+
+data "aws_vpc" "default" {
+  default = true
+}
+#use default vpc id and get default subnet ids
+
+data "aws_subnet_ids" "default_subnet_ids" {
+  vpc_id = data.aws_vpc_default.default.id
+}
+
 resource "aws_autoscaling_group" "example" {
   launch_configuration = aws.launch_configuration.example.name
+  # use default subnet ids
+  vpc_zone_identifier  = data.aws_subnet_ids.default_subnet_ids.ids
   min_size = 2
   max_size = 3
 
