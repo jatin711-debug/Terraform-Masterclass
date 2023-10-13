@@ -7,6 +7,10 @@ terraform {
   }
 }
 
+provider "aws" {
+  region = "ca-central-1"
+}
+
 variable "server_port" {
   description = "value of port server will listen on"
   default     = "8080"
