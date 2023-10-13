@@ -1,6 +1,7 @@
 # My Terraform Project
 
 This project deploys a simple web application to AWS using Terraform.
+<img src= "./media/images/image_1.png">
 
 ## Directory Structure
 
