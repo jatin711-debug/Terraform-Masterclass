@@ -5,11 +5,20 @@ terraform {
       version = "~> 5.0"
     }
   }
+  backend "s3" {
+    bucket         = "johnny-terraform-state-bucket"
+    key            = "stage/s3/terraform.tfstate"
+    region         = "ca-central-1"
+    dynamodb_table = "terraform_locks"
+    encrypt        = true
+  }
 }
 
 provider "aws" {
   region = "ca-central-1"
 }
+
+
 
 variable "server_port" {
   description = "value of port server will listen on"
@@ -61,14 +70,14 @@ resource "aws_security_group" "server_security_group" {
 
 
 resource "aws_launch_configuration" "example" {
-  name           = "terraform-example"
+  name            = "terraform-example"
   image_id        = "ami-0ea18256de20ecdfc"
   instance_type   = "t2.micro"
   security_groups = [aws_security_group.server_security_group.id]
   lifecycle {
     create_before_destroy = true
   }
-  user_data       = <<-EOF
+  user_data = <<-EOF
               #!/bin/bash
               sudo apt install -y apache2
               sudo apt-get install ec2-instance-connect 
@@ -100,9 +109,9 @@ data "aws_subnets" "default" {
 resource "aws_autoscaling_group" "example" {
   launch_configuration = aws_launch_configuration.example.name
   # use default subnet ids
-  vpc_zone_identifier  = data.aws_subnets.default.ids
-  target_group_arns    = [aws_lb_target_group.asg.arn]
-  health_check_type = "ELB"
+  vpc_zone_identifier = data.aws_subnets.default.ids
+  target_group_arns   = [aws_lb_target_group.asg.arn]
+  health_check_type   = "ELB"
 
   min_size = 2
   max_size = 3
@@ -116,10 +125,10 @@ resource "aws_autoscaling_group" "example" {
 
 
 resource "aws_lb" "example" {
-  name = "terraform-asg-example"
+  name               = "terraform-asg-example"
   load_balancer_type = "application"
-  subnets = data.aws_subnets.default.ids
-  security_groups = [aws_security_group.alb.id]
+  subnets            = data.aws_subnets.default.ids
+  security_groups    = [aws_security_group.alb.id]
 }
 
 resource "aws_lb_listener" "http" {
@@ -154,24 +163,24 @@ resource "aws_security_group" "alb" {
 }
 
 resource "aws_lb_target_group" "asg" {
-  name ="terraform-asg-target-group"
-  port = var.server_port
+  name     = "terraform-asg-target-group"
+  port     = var.server_port
   protocol = "HTTP"
-  vpc_id = data.aws_vpc.default.id
+  vpc_id   = data.aws_vpc.default.id
   health_check {
-    path = "/"
-    protocol = "HTTP"
-    matcher = "200"
-    interval = 15
-    timeout = 3
-    healthy_threshold = 2
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200"
+    interval            = 15
+    timeout             = 3
+    healthy_threshold   = 2
     unhealthy_threshold = 2
   }
 }
 
 resource "aws_lb_listener_rule" "asg" {
   listener_arn = aws_lb_listener.http.arn
-  priority = 1
+  priority     = 1
 
   condition {
     path_pattern {
@@ -179,12 +188,12 @@ resource "aws_lb_listener_rule" "asg" {
     }
   }
   action {
-    type = "forward"
+    type             = "forward"
     target_group_arn = aws_lb_target_group.asg.arn
   }
 }
 
 output "alb_dns_name" {
-  value = aws_lb.example.dns_name
+  value       = aws_lb.example.dns_name
   description = "Domain name of the load balancer"
 }

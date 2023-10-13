@@ -11,6 +11,16 @@ provider "aws" {
   region = "ca-central-1"
 }
 
+terraform {
+    backend "s3" {
+        bucket         = "johnny-terraform-state-bucket"
+        key            = "global/s3/terraform.tfstate"
+        region         = "ca-central-1"
+        dynamodb_table = "terraform_locks"
+        encrypt        = true
+    }
+}
+
 resource "aws_s3_bucket" "terraform_state" {
   bucket = "johnny-terraform-state-bucket"
   lifecycle {
